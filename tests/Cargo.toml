@@ -1,0 +1,12 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+nested-attr = { path = "../nested-attr" }
+
+[lints]
+workspace = true

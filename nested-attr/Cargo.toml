@@ -1,0 +1,15 @@
+[package]
+name = "nested-attr"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+nested-attr-impl = { path = "../nested-attr-impl" }
+
+[lints]
+workspace = true
