@@ -28,7 +28,9 @@ nested! {
             pub struct E {
                 /// mem mt
                 pub mt: ()
-            }
+            },
+            /// Unit.
+            pub struct F
         }
     }
 }
