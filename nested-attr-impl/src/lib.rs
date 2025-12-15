@@ -102,6 +102,11 @@ impl NestedStruct {
 
     /// Split nesting and write to token stream.
     fn write_split(&self, tokens: &mut TokenStream) {
+        self.write_split_(tokens);
+    }
+
+    /// Implementation for recursive writing.
+    fn write_split_(&self, tokens: &mut TokenStream) {
         let Self {
             attrs,
             vis,
@@ -162,6 +167,13 @@ impl NestedStruct {
                                 colon_token = ::syn::token::Colon {
                                     spans: [ty_ident.span()],
                                 };
+
+                                for attr in attrs {
+                                    if attr.path().is_ident("doc") {
+                                        attr.to_tokens(tokens);
+                                    }
+                                }
+
                                 (&field, &colon_token, ty_ident)
                             }
                             NestedStructIdent::FieldTyIdent {
