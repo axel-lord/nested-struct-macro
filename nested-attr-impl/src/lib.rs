@@ -4,7 +4,7 @@ use ::convert_case::{Case, Casing};
 use ::proc_macro2::TokenStream;
 use ::quote::ToTokens;
 use ::syn::{
-    Attribute, Generics, Ident, Token, Type, Visibility, braced,
+    AttrStyle, Attribute, Generics, Ident, Token, Type, Visibility, braced,
     parse::{Parse, Parser},
     punctuated::{Pair, Punctuated},
     token::Brace,
@@ -15,6 +15,20 @@ pub fn nested(item: TokenStream) -> TokenStream {
     parse_nested
         .parse2(item)
         .unwrap_or_else(::syn::Error::into_compile_error)
+}
+
+/// Syn parser for nested struct.
+fn parse_nested(input: ::syn::parse::ParseStream) -> ::syn::Result<TokenStream> {
+    let mut inner_attrs = input.call(Attribute::parse_inner)?;
+    for attr in &mut inner_attrs {
+        attr.style = AttrStyle::Outer;
+    }
+    let global_attrs = inner_attrs;
+
+    let nested_struct = input.parse()?;
+    let mut tokens = TokenStream::default();
+    NestedStruct::write_split(&nested_struct, &mut tokens, &global_attrs);
+    Ok(tokens)
 }
 
 /// Identity of nested struct, either just a type name or a field name and a type name.
@@ -101,12 +115,7 @@ impl NestedStruct {
     }
 
     /// Split nesting and write to token stream.
-    fn write_split(&self, tokens: &mut TokenStream) {
-        self.write_split_(tokens);
-    }
-
-    /// Implementation for recursive writing.
-    fn write_split_(&self, tokens: &mut TokenStream) {
+    fn write_split(&self, tokens: &mut TokenStream, global_attrs: &[Attribute]) {
         let Self {
             attrs,
             vis,
@@ -121,6 +130,9 @@ impl NestedStruct {
                 attrs, ty_ident, ..
             } => (attrs, ty_ident),
         };
+        for attr in global_attrs {
+            attr.to_tokens(tokens);
+        }
         for attr in attrs {
             attr.to_tokens(tokens);
         }
@@ -215,7 +227,7 @@ impl NestedStruct {
         });
 
         for nested in split {
-            nested.write_split(tokens);
+            nested.write_split(tokens, global_attrs);
         }
     }
 }
@@ -294,12 +306,4 @@ impl Parse for NamedField {
             })
         }
     }
-}
-
-/// Syn parser for nested struct.
-fn parse_nested(input: ::syn::parse::ParseStream) -> ::syn::Result<TokenStream> {
-    let nested_struct = input.parse()?;
-    let mut tokens = TokenStream::default();
-    NestedStruct::write_split(&nested_struct, &mut tokens);
-    Ok(tokens)
 }
